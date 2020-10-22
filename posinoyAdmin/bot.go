@@ -9,7 +9,7 @@ import (
 	//"net/http"
 	"database/sql"
 
-	_ "github.comm/lib/pq"
+	_ "github.com/lib/pq"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
