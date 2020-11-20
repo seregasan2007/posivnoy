@@ -156,24 +156,24 @@ func main() {
 
 	log.Printf("Authorized on account posivnoy_bot")
 
-	c := cron.New()
-	c.AddFunc("CRON_TZ=Europe/Moscow 0 18 * * 1-5", func() {
-		auth := smtp.PlainAuth("", "mama210897@gmail.com", "mama23740740089334801021578749", "smtp.gmail.com")
-
-		// Connect to the server, authenticate, set the sender and recipient,
-		// and send the email all in one step.
-		to := []string{"schernetsov@fil-it.ru"}
-		msg := []byte("To: schernetsov@fil-it.ru\r\n" +
-			"Subject: discount Gophers!\r\n" +
-			"\r\n" +
-			"This is the email body.\r\n")
-		err := smtp.SendMail("smtp.gmail.com:587", auth, "mama210897@gmail.com", to, msg)
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Println("Remaind sended")
-	})
-	c.Start()
+//	c := cron.New()
+//	c.AddFunc("CRON_TZ=Europe/Moscow 0 18 * * 1-5", func() {
+//		auth := smtp.PlainAuth("", "mama210897@gmail.com", "mama23740740089334801021578749", "smtp.gmail.com")
+//
+//		// Connect to the server, authenticate, set the sender and recipient,
+//		// and send the email all in one step.
+//		to := []string{"schernetsov@fil-it.ru"}
+//		msg := []byte("To: schernetsov@fil-it.ru\r\n" +
+//			"Subject: discount Gophers!\r\n" +
+//			"\r\n" +
+//			"This is the email body.\r\n")
+//		err := smtp.SendMail("smtp.gmail.com:587", auth, "mama210897@gmail.com", to, msg)
+//		if err != nil {
+//			log.Fatal(err)
+//		}
+//		log.Println("Remaind sended")
+//	})
+//	c.Start()
 
 	// Задаем перечень кнопок
 
