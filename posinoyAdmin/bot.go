@@ -173,7 +173,7 @@ func main() {
 
 			log.Println(c.Sender.Username, ": show analysts")
 
-			catGlobal = "analysts"
+			catGlobal = "an"
 
 			uresp := selectDB(catGlobal)
 

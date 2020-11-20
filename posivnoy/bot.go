@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"net/smtp"
 	"strconv"
 	"strings"
 	"time"
@@ -156,24 +155,24 @@ func main() {
 
 	log.Printf("Authorized on account posivnoy_bot")
 
-//	c := cron.New()
-//	c.AddFunc("CRON_TZ=Europe/Moscow 0 18 * * 1-5", func() {
-//		auth := smtp.PlainAuth("", "mama210897@gmail.com", "mama23740740089334801021578749", "smtp.gmail.com")
-//
-//		// Connect to the server, authenticate, set the sender and recipient,
-//		// and send the email all in one step.
-//		to := []string{"schernetsov@fil-it.ru"}
-//		msg := []byte("To: schernetsov@fil-it.ru\r\n" +
-//			"Subject: discount Gophers!\r\n" +
-//			"\r\n" +
-//			"This is the email body.\r\n")
-//		err := smtp.SendMail("smtp.gmail.com:587", auth, "mama210897@gmail.com", to, msg)
-//		if err != nil {
-//			log.Fatal(err)
-//		}
-//		log.Println("Remaind sended")
-//	})
-//	c.Start()
+	// c := cron.New()
+	// c.AddFunc("CRON_TZ=Europe/Moscow 0 18 * * 1-5", func() {
+	// 	auth := smtp.PlainAuth("", "mama210897@gmail.com", "mama23740740089334801021578749", "smtp.gmail.com")
+
+	// 	// Connect to the server, authenticate, set the sender and recipient,
+	// 	// and send the email all in one step.
+	// 	to := []string{"schernetsov@fil-it.ru"}
+	// 	msg := []byte("To: schernetsov@fil-it.ru\r\n" +
+	// 		"Subject: discount Gophers!\r\n" +
+	// 		"\r\n" +
+	// 		"This is the email body.\r\n")
+	// 	err := smtp.SendMail("smtp.gmail.com:587", auth, "mama210897@gmail.com", to, msg)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	log.Println("Remaind sended")
+	// })
+	// c.Start()
 
 	// Задаем перечень кнопок
 
@@ -221,7 +220,7 @@ func main() {
 
 	b.Handle("/start", func(m *tb.Message) {
 		log.Println(m.Sender.Username, " id = ", m.Sender.ID, ": start")
-		uresp := "Привет! 🗳️\nЯ помогу обратиться к определенной группе людей в беседе\nУ меня есть несколько комманд для разных групп:\n\n/all\n\n/an\n\n/dev\n\nЕсли необходимая группа не входит в список существующих команд можно воспользоваться конструкцией из примера ниже: \n\n/ng designers Привет 👋\n\nЕсли необходимо узнать список категорий можно воспользоваться командой:\n/show_cat\n\nДля настройки напоминаний можно воспользоваться коммандой:\n/menu"
+		uresp := ""
 		b.Send(m.Chat, uresp)
 
 		// Собираем список чатов где была выполнена команда /start
@@ -267,14 +266,16 @@ func main() {
 				dgUsers = append(dgUsers, p)
 			}
 
-			uresp := "Выбери категорию:\n\n/c_all\n\n"
+			uresp := "Выбери категорию:\n\nall\n\n"
 
 			for i := 0; i <= len(dgUsers)-1; i++ {
-				uresp += "/c_" + dgUsers[i].usr_cat + "\n\n"
+				uresp += dgUsers[i].usr_cat + "\n\n"
 			}
+
+			uresp += "И укажи в формате:\n/c an"
 			b.Edit(c.Message, uresp)
 
-			b.Handle(tb.OnText, func(m *tb.Message) {
+			b.Handle("/c", func(m *tb.Message) {
 
 				log.Println(m.Sender.Username, ": ", m.Text)
 
@@ -282,36 +283,38 @@ func main() {
 
 				log.Println(m.Sender.Username, ": ")
 
-				uresp := "Укажите время оповещения.\nФормат: hh:mm"
+				uresp := "Укажите время оповещения.\nФормат:\n /tm hh:mm"
 				b.Send(m.Chat, uresp)
 
-				b.Handle(tb.OnText, func(m *tb.Message) {
+				b.Handle("/tm", func(m *tb.Message) {
 
 					log.Println(m.Sender.Username, ": ", m.Text)
 
-					hourMin := strings.Split(m.Text, ":")
+					uhm := m.Text[4:]
+
+					hourMin := strings.Split(uhm, ":")
 
 					hour := hourMin[0]
 					min := hourMin[1]
 
 					log.Println(m.Sender.Username, ": ")
 
-					uresp := "Укажите текст оповещения:"
+					uresp := "Укажите текст оповещения в формате:\n/tx Привет👋"
 					b.Send(m.Chat, uresp)
 
-					b.Handle(tb.OnText, func(m *tb.Message) {
+					b.Handle("/tx", func(m *tb.Message) {
+
+						txt := m.Text[4:]
 
 						cp := "CRON_TZ=Europe/Moscow " + min + " " + hour + " * * *"
 
-						crn = append(crn, makeCron(cp, m.Text, usCat, true, senders, b))
-						notice = append(notice, m.Text)
+						crn = append(crn, makeCron(cp, txt, usCat, true, senders, b))
+						notice = append(notice, txt)
 
 						crn[len(crn)-1].Start()
 
 						uresp := "Напоминание создано"
 						b.Send(m.Chat, uresp)
-
-						b.Handle(tb.OnText, func(m *tb.Message) {})
 
 					})
 
@@ -349,36 +352,40 @@ func main() {
 				dgUsers = append(dgUsers, p)
 			}
 
-			uresp := "Выбери категорию:\n\n/c_all\n\n"
+			uresp := "Выбери категорию:\n\nall\n\n"
 
 			for i := 0; i <= len(dgUsers)-1; i++ {
 				uresp += "/c_" + dgUsers[i].usr_cat + "\n\n"
 			}
+
+			uresp += "И укажи в формате:\n/c an"
 			b.Edit(c.Message, uresp)
 
-			b.Handle(tb.OnText, func(m *tb.Message) {
+			b.Handle("/c", func(m *tb.Message) {
 
 				usCat := m.Text[3:]
 
 				log.Println(m.Sender.Username, ": ")
 
-				uresp := "Укажите дату оповещения.\nФормат: DD"
+				uresp := "Укажите дату оповещения.\nФормат:\n/dt DD"
 				b.Send(m.Chat, uresp)
 
-				b.Handle(tb.OnText, func(m *tb.Message) {
+				b.Handle("/dt", func(m *tb.Message) {
 
 					log.Println(m.Sender.Username, ": ", m.Text)
 
-					date := m.Text
+					date := m.Text[4:]
 
-					uresp := "Укажите время оповещения.\nФормат: hh:mm"
+					uresp := "Укажите время оповещения.\nФормат:\n/tm hh:mm"
 					b.Send(m.Chat, uresp)
 
-					b.Handle(tb.OnText, func(m *tb.Message) {
+					b.Handle("/tm", func(m *tb.Message) {
 
 						log.Println(m.Sender.Username, ": ", m.Text)
 
-						hourMin := strings.Split(m.Text, ":")
+						uhm := m.Text[4:]
+
+						hourMin := strings.Split(uhm, ":")
 
 						hour := hourMin[0]
 						min := hourMin[1]
@@ -388,12 +395,14 @@ func main() {
 						uresp := "Укажите текст оповещения:"
 						b.Send(m.Chat, uresp)
 
-						b.Handle(tb.OnText, func(m *tb.Message) {
+						b.Handle("/tx", func(m *tb.Message) {
+
+							txt := m.Text[4:]
 
 							cp := "CRON_TZ=Europe/Moscow " + min + " " + hour + " " + date + " * *"
 
-							crn = append(crn, makeCron(cp, m.Text, usCat, true, senders, b))
-							notice = append(notice, m.Text)
+							crn = append(crn, makeCron(cp, txt, usCat, true, senders, b))
+							notice = append(notice, txt)
 
 							crn[len(crn)-1].Start()
 
@@ -444,15 +453,15 @@ func main() {
 			for i := 0; i <= len(dgUsers)-1; i++ {
 				uresp += "/c_" + dgUsers[i].usr_cat + "\n\n"
 			}
+
+			uresp += "И укажи в формате:\n/c an"
 			b.Edit(c.Message, uresp)
 
-			b.Handle(tb.OnText, func(m *tb.Message) {
+			b.Handle("/c", func(m *tb.Message) {
 
 				log.Println(m.Sender.Username, ": ", m.Text)
 
 				usCat := m.Text[3:]
-
-				log.Println(m.Sender.Username, ": ")
 
 				uresp := "Выбери периодичность"
 				b.Send(m.Chat, uresp, &tb.ReplyMarkup{
@@ -466,35 +475,35 @@ func main() {
 					uresp := "Укажи номер дня недели.\nЕсли дней несколько напиши номера через запятую без пробелов)"
 					b.Edit(c.Message, uresp)
 
-					b.Handle(tb.OnText, func(m *tb.Message) {
+					b.Handle("/w", func(m *tb.Message) {
 
 						log.Println(m.Sender.Username, ": ", m.Text)
 
-						weekDay := m.Text
+						weekDay := m.Text[3:]
 
-						uresp := "Укажите время оповещения.\nФормат: hh:mm"
+						uresp := "Укажите время оповещения.\nФормат:\n/tm hh:mm"
 						b.Send(m.Chat, uresp)
 
-						b.Handle(tb.OnText, func(m *tb.Message) {
+						b.Handle("/tm", func(m *tb.Message) {
 
 							log.Println(m.Sender.Username, ": ", m.Text)
 
-							hourMin := strings.Split(m.Text, ":")
+							hourMin := strings.Split(m.Text[4:], ":")
 
 							hour := hourMin[0]
 							min := hourMin[1]
 
 							log.Println(m.Sender.Username, ": ")
 
-							uresp := "Укажите текст оповещения:"
+							uresp := "Укажите текст оповещения в формате:\n/tx text"
 							b.Send(m.Chat, uresp)
 
-							b.Handle(tb.OnText, func(m *tb.Message) {
+							b.Handle("/tx", func(m *tb.Message) {
 
 								cp := "CRON_TZ=Europe/Moscow " + min + " " + hour + " * * " + weekDay
 
-								crn = append(crn, makeCron(cp, m.Text, usCat, true, senders, b))
-								notice = append(notice, m.Text)
+								crn = append(crn, makeCron(cp, m.Text[4:], usCat, true, senders, b))
+								notice = append(notice, m.Text[4:])
 
 								crn[len(crn)-1].Start()
 
@@ -515,38 +524,38 @@ func main() {
 
 					log.Println(c.Sender.Username, ": ", m.Text)
 
-					uresp := "Укажи число.\nЕсли дней несколько напиши числа через запятую без пробелов)"
+					uresp := "Укажи число.\nЕсли дней несколько напиши числа через запятую без пробелов)\n/d"
 					b.Edit(c.Message, uresp)
 
-					b.Handle(tb.OnText, func(m *tb.Message) {
+					b.Handle("/d", func(m *tb.Message) {
 
 						log.Println(m.Sender.Username, ": ", m.Text)
 
-						date := m.Text
+						date := m.Text[3:]
 
-						uresp := "Укажите время оповещения.\nФормат: hh:mm"
+						uresp := "Укажите время оповещения.\nФормат:\n/tm hh:mm"
 						b.Send(m.Chat, uresp)
 
-						b.Handle(tb.OnText, func(m *tb.Message) {
+						b.Handle("/tm", func(m *tb.Message) {
 
 							log.Println(m.Sender.Username, ": ", m.Text)
 
-							hourMin := strings.Split(m.Text, ":")
+							hourMin := strings.Split(m.Text[4:], ":")
 
 							hour := hourMin[0]
 							min := hourMin[1]
 
 							log.Println(m.Sender.Username, ": ")
 
-							uresp := "Укажите текст оповещения:"
+							uresp := "Укажите текст оповещения:\n/tx"
 							b.Send(m.Chat, uresp)
 
-							b.Handle(tb.OnText, func(m *tb.Message) {
+							b.Handle("/tx", func(m *tb.Message) {
 
 								cp := "CRON_TZ=Europe/Moscow " + min + " " + hour + " * " + date + " *"
 
-								crn = append(crn, makeCron(cp, m.Text, usCat, true, senders, b))
-								notice = append(notice, m.Text)
+								crn = append(crn, makeCron(cp, m.Text[4:], usCat, true, senders, b))
+								notice = append(notice, m.Text[4:])
 
 								crn[len(crn)-1].Start()
 
@@ -567,29 +576,29 @@ func main() {
 
 					log.Println(m.Sender.Username, ": ", m.Text)
 
-					uresp := "Укажите время оповещения.\nФормат: hh:mm"
+					uresp := "Укажите время оповещения.\nФормат:\n/tm hh:mm"
 					b.Send(m.Chat, uresp)
 
-					b.Handle(tb.OnText, func(m *tb.Message) {
+					b.Handle("/tm", func(m *tb.Message) {
 
 						log.Println(m.Sender.Username, ": ", m.Text)
 
-						hourMin := strings.Split(m.Text, ":")
+						hourMin := strings.Split(m.Text[4:], ":")
 
 						hour := hourMin[0]
 						min := hourMin[1]
 
 						log.Println(m.Sender.Username, ": ")
 
-						uresp := "Укажите текст оповещения:"
+						uresp := "Укажите текст оповещения:\n/tx"
 						b.Send(m.Chat, uresp)
 
-						b.Handle(tb.OnText, func(m *tb.Message) {
+						b.Handle("/tx", func(m *tb.Message) {
 
 							cp := "CRON_TZ=Europe/Moscow " + min + " " + hour + " * * *"
 
-							crn = append(crn, makeCron(cp, m.Text, usCat, true, senders, b))
-							notice = append(notice, m.Text)
+							crn = append(crn, makeCron(cp, m.Text[4:], usCat, true, senders, b))
+							notice = append(notice, m.Text[4:])
 
 							crn[len(crn)-1].Start()
 
